@@ -1,13 +1,12 @@
 import random
 
-exchange_rules = {"rabbit": 1, "sheep": 6, "pig": 12, "cow": 36, "horse": 72, "fox": 0, "wolf": 0}
-edible = ["rabbit", "sheep", "pig", "cow"]
-
 
 class Game:
-    def __init__(self, available):
+    def __init__(self, available={"rabbit": 60, "sheep": 24, "pig": 20, "cow": 12, "horse": 6}):
         self.animals_available = available.copy()
         self.default = available.copy()
+        self.exchange_rules = {"rabbit": 1, "sheep": 6, "pig": 12, "cow": 36, "horse": 72, "fox": 0, "wolf": 0}
+        self.edible = ["rabbit", "sheep", "pig", "cow"]
 
     def reset(self):
         self.animals_available = self.default.copy()
@@ -17,7 +16,6 @@ class Person(Game):
 
     def __init__(self, game):
         self.game = game
-        # self.default = {"rabbit": 0, "sheep": 0, "pig": 0, "cow": 0, "horse": 0}
         self.farm = {"rabbit": 0, "sheep": 0, "pig": 0, "cow": 0, "horse": 0}
 
     def set_farm(self, kind, count):
@@ -41,7 +39,7 @@ class Person(Game):
         self.set_farm("rabbit", 0)
 
     def eat_by_wolf(self):
-        for animal in edible:
+        for animal in self.game.edible:
             self.game.animals_available[animal] += self.farm[animal]
             self.set_farm(animal, 0)
 
@@ -57,6 +55,7 @@ class Person(Game):
     # you want to exchange for {latter kind}
     def exchange(self, former_kind, former_count, latter_kind):
         # former is less valuable than latter
+        exchange_rules = self.game.exchange_rules
         if exchange_rules[latter_kind] > exchange_rules[former_kind]:
             small = former_kind
             big = latter_kind
@@ -81,18 +80,21 @@ class Person(Game):
         self.add_farm(latter_kind, add_value)
         self.reduce_farm(former_kind, reduce_value)
 
-    def roll_dice_red(self, red_dice):
+    @staticmethod
+    def roll_dice_red(red_dice):
         return red_dice.roll()
 
-    def roll_dice_yellow(self, yellow_dice):
+    @staticmethod
+    def roll_dice_yellow(yellow_dice):
         return yellow_dice.roll()
 
-    def roll_both_dice(self, red_dice, yellow_dice):
-        return self.roll_dice_red(red_dice), self.roll_dice_yellow(yellow_dice)
+    @staticmethod
+    def roll_both_dice(red_dice, yellow_dice):
+        return Person.roll_dice_red(red_dice), Person.roll_dice_yellow(yellow_dice)
 
     def make_turn(self, red_dice, yellow_dice):
         self.exchange_strategy()
-        red, yellow = self.roll_both_dice(red_dice, yellow_dice)
+        red, yellow = Person.roll_both_dice(red_dice, yellow_dice)
         if yellow == "wolf":
             self.eat_by_wolf()
         elif red == "fox":
@@ -110,7 +112,7 @@ class Person(Game):
     def calculate_value(self):
         value = 0
         for animal in self.farm:
-            value += self.farm[animal] * exchange_rules[animal]
+            value += self.farm[animal] * self.game.exchange_rules[animal]
         return value
 
     def check_win(self):
